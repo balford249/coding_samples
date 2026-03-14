@@ -10,6 +10,7 @@ const (
 	AddOrder EventType = iota
 	ModifyOrder
 	ExecuteOrder
+	CancelOrder
 	Trade
 	UnknownEvent
 )
@@ -20,6 +21,22 @@ type PitchProcesser struct {
 
 type AddOrderDetails struct {
 	OrderId string
+	Symbol  string
+	Price   float32
+	Size    int
+}
+
+type ModifyOrderDetails struct {
+	OrderId string
+	Price   float32
+	Size    int
+}
+
+type CancelOrderDetails struct {
+	OrderId string
+}
+
+type TradeDetails struct {
 	Symbol  string
 	Price   float32
 	Size    int
@@ -36,6 +53,8 @@ func (pp PitchProcesser) getEvent(line string) EventType {
 		return AddOrder
 	case pp.fileParser.EventChars.ModifyOrder:
 		return ModifyOrder
+	case pp.fileParser.EventChars.CancelOrder:
+		return CancelOrder
 	case pp.fileParser.EventChars.ExecuteOrder:
 		return ExecuteOrder
 	case pp.fileParser.EventChars.Trade:
@@ -45,10 +64,31 @@ func (pp PitchProcesser) getEvent(line string) EventType {
 }
 
 func (pp PitchProcesser) getAddOrderDetails(line string) AddOrderDetails {
-	orderid := extractField(line, pp.fileParser.AddOrderOffsets.orderId)
-	symbol := extractField(line, pp.fileParser.AddOrderOffsets.symbol)
-	price64, _ := strconv.ParseFloat(extractField(line, pp.fileParser.AddOrderOffsets.price), 64)
-	price := float32(price64)
-	size, _ := strconv.Atoi(extractField(line, pp.fileParser.AddOrderOffsets.size))
-	return AddOrderDetails{OrderId: orderid, Symbol: symbol, Price: price, Size: size}
+	OrderId := extractField(line, pp.fileParser.AddOrderOffsets.OrderId)
+	Symbol := extractField(line, pp.fileParser.AddOrderOffsets.Symbol)
+	Price64, _ := strconv.ParseFloat(extractField(line, pp.fileParser.AddOrderOffsets.Price), 64)
+	Price := float32(Price64)
+	Size, _ := strconv.Atoi(extractField(line, pp.fileParser.AddOrderOffsets.Size))
+	return AddOrderDetails{OrderId: OrderId, Symbol: Symbol, Price: Price, Size: Size}
+}
+
+func (pp PitchProcesser) getModifyOrderDetails(line string) ModifyOrderDetails {
+	OrderId := extractField(line, pp.fileParser.ModifyOrderOffsets.OrderId)
+	Price64, _ := strconv.ParseFloat(extractField(line, pp.fileParser.ModifyOrderOffsets.Price), 64)
+	Price := float32(Price64)
+	Size, _ := strconv.Atoi(extractField(line, pp.fileParser.ModifyOrderOffsets.Size))
+	return ModifyOrderDetails{OrderId: OrderId, Price: Price, Size: Size}
+}
+
+func (pp PitchProcesser) getCancelOrderDetails(line string) CancelOrderDetails {
+	OrderId := extractField(line, pp.fileParser.CancelOrderOffsets.OrderId)
+	return CancelOrderDetails{OrderId: OrderId}
+}
+
+func (pp PitchProcesser) getTradeDetails(line string) TradeDetails {
+	Symbol := extractField(line, pp.fileParser.TradeOffsets.Symbol)
+	Price64, _ := strconv.ParseFloat(extractField(line, pp.fileParser.TradeOffsets.Price), 64)
+	Price := float32(Price64)
+	Size, _ := strconv.Atoi(extractField(line, pp.fileParser.TradeOffsets.Size))
+	return TradeDetails{Symbol: Symbol, Price: Price, Size: Size}
 }
