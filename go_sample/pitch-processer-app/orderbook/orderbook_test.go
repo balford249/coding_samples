@@ -39,6 +39,89 @@ func TestAddOrder_Duplicate(t *testing.T) {
 	}
 }
 
+func TestModifyOrderSuccess(t *testing.T) {
+
+	ob := newTestOrderBook()
+
+	order := Order{
+		ID:     "1",
+		Symbol: "AAPL",
+		Price:  100,
+		Size:   10,
+	}
+
+	ob.AddOrder(order)
+
+	err := ob.ModifyOrder("1", 20, 150)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	o, exists := ob.Book["1"]
+	if !exists {
+		t.Fatalf("order should exist in book")
+	}
+
+	if o.Size != 20 {
+		t.Errorf("expected size 20, got %d", o.Size)
+	}
+
+	if o.Price != 150 {
+		t.Errorf("expected price 150, got %f", o.Price)
+	}
+}
+
+func TestModifyOrderOrderNotFound(t *testing.T) {
+
+	ob := newTestOrderBook()
+
+	err := ob.ModifyOrder("999", 10, 100)
+
+	if err == nil {
+		t.Fatalf("expected error for missing order")
+	}
+}
+
+func TestModifyOrderInvalidPrice(t *testing.T) {
+
+	ob := newTestOrderBook()
+
+	order := Order{
+		ID:     "1",
+		Symbol: "AAPL",
+		Price:  100,
+		Size:   10,
+	}
+
+	ob.AddOrder(order)
+
+	err := ob.ModifyOrder("1", 20, 0)
+
+	if err == nil {
+		t.Fatalf("expected error for invalid price")
+	}
+}
+
+func TestModifyOrderInvalidSize(t *testing.T) {
+
+	ob := newTestOrderBook()
+
+	order := Order{
+		ID:     "1",
+		Symbol: "AAPL",
+		Price:  100,
+		Size:   10,
+	}
+
+	ob.AddOrder(order)
+
+	err := ob.ModifyOrder("1", 0, 200)
+
+	if err == nil {
+		t.Fatalf("expected error for invalid size")
+	}
+}
+
 func TestRemoveOrder(t *testing.T) {
 	ob := newTestOrderBook()
 	o := NewStandardTestOrder()

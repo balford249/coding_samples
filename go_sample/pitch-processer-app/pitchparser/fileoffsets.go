@@ -1,9 +1,5 @@
-package pitchprocesser
+package pitchparser
 
-import (
-	"encoding/json"
-	"os"
-)
 
 type FieldOffset struct {
 	Start int `json:"start"`
@@ -46,29 +42,3 @@ type TradeEventOffsets struct {
 	Size   FieldOffset `json:"size"`
 }
 
-type PitchFileParser struct {
-	EventChars      EventChars              `json:"eventChars"`
-	EventTypeOffset FieldOffset             `json:"eventTypeOffset"`
-	AddOrderOffsets AddOrderEventOffsets    `json:"addOrderOffsets"`
-	ModifyOrderOffsets ModifyOrderEventOffsets `json:"modifyOrderOffsets"`
-	ExecuteOrderOffsets ExecuteOrderEventOffsets `json:"executeOrderOffsets"`
-	CancelOrderOffsets CancelOrderEventOffsets `json:"cancelOrderOffsets"`
-	TradeOffsets TradeEventOffsets          `json:"tradeOffsets"`
-}
-
-func LoadParserConfig(path string) (PitchFileParser, error) {
-
-	var parser PitchFileParser
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return parser, err
-	}
-
-	err = json.Unmarshal(data, &parser)
-	if err != nil {
-		return parser, err
-	}
-
-	return parser, nil
-}

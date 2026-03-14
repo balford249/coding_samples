@@ -1,25 +1,17 @@
-package pitchprocesser
+package pitchparser
 
 import "testing"
 
-func newTestProcessor() PitchProcesser {
-
-	parser, err := LoadParserConfig("testdata/pitchFileTypeA.json")
-	if err != nil {
-		panic(err)
-	}
-
-	return PitchProcesser{
-		fileParser: parser,
-	}
+func newTestParser() PitchFileParser {
+	 return NewPitchParser("testdata/pitchFileTypeA.json")
 }
 
 func TestGetEvent_AddOrder(t *testing.T) {
-	pp := newTestProcessor()
+	pp := newTestParser()
 
 	line := "A1234567890AAPL00012345000100"
 
-	event := pp.getEvent(line)
+	event := pp.GetEvent(line)
 
 	if event != AddOrder {
 		t.Fatalf("expected AddOrder, got %v", event)
@@ -27,11 +19,11 @@ func TestGetEvent_AddOrder(t *testing.T) {
 }
 
 func TestGetAddOrderDetails(t *testing.T) {
-	pp := newTestProcessor()
+	pp := newTestParser()
 
 	line := "A1234567890AAPL00012345000100"
 
-	details := pp.getAddOrderDetails(line)
+	details := pp.GetAddOrderDetails(line)
 
 	if details.OrderId != "1234567890" {
 		t.Errorf("expected orderId 1234567890, got %s", details.OrderId)
@@ -51,11 +43,11 @@ func TestGetAddOrderDetails(t *testing.T) {
 }
 
 func TestGetModifyOrderDetails(t *testing.T) {
-	pp := newTestProcessor()
+	pp := newTestParser()
 
 	line := "M1234567890AAPL00020000000200"
 
-	details := pp.getModifyOrderDetails(line)
+	details := pp.GetModifyOrderDetails(line)
 
 	if details.OrderId != "1234567890" {
 		t.Errorf("expected orderId 1234567890, got %s", details.OrderId)
@@ -71,11 +63,11 @@ func TestGetModifyOrderDetails(t *testing.T) {
 }
 
 func TestGetCancelOrderDetails(t *testing.T) {
-	pp := newTestProcessor()
+	pp := newTestParser()
 
 	line := "C1234567890AAPL00000000000000"
 
-	details := pp.getCancelOrderDetails(line)
+	details := pp.GetCancelOrderDetails(line)
 
 	if details.OrderId != "1234567890" {
 		t.Errorf("expected orderId 1234567890, got %s", details.OrderId)
@@ -83,11 +75,11 @@ func TestGetCancelOrderDetails(t *testing.T) {
 }
 
 func TestGetTradeDetails(t *testing.T) {
-	pp := newTestProcessor()
+	pp := newTestParser()
 
 	line := "T1234567890AAPL00010000000050"
 
-	details := pp.getTradeDetails(line)
+	details := pp.GetTradeDetails(line)
 
 	if details.Symbol != "AAPL" {
 		t.Errorf("expected symbol AAPL, got %s", details.Symbol)

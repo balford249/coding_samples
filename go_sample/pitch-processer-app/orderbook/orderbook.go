@@ -5,6 +5,13 @@ import (
 	"sort"
 )
 
+type Order struct {
+	ID     string
+	Symbol string
+	Price  float32
+	Size   int
+}
+
 type OrderBook struct {
 	Book                    map[string] *Order
 	QuantatiyTradedBySymbol map[string]int
@@ -30,6 +37,22 @@ func (ob *OrderBook) AddOrder(order Order) error {
 	}
 
 	ob.Book[order.ID] = &order
+	return nil
+}
+
+func (ob  *OrderBook) ModifyOrder(orderId string, newSize int, newPrice float32) error {
+	if newPrice <= 0 {
+		return errors.New("price update must be greater than zero")
+	}
+	if newSize <= 0 {
+		return errors.New("size update must be greater than zero")
+	}
+	o, err := ob.getOrder(orderId)
+	if err != nil {
+		return err
+	}
+	o.Price = newPrice
+	o.Size = newSize
 	return nil
 }
 
