@@ -1,9 +1,9 @@
 package pitchparser
 
 import (
-	"strconv"
-	"os"
 	"encoding/json"
+	"os"
+	"strconv"
 )
 
 type EventType int
@@ -18,13 +18,13 @@ const (
 )
 
 type PitchFileParser struct {
-	EventChars      EventChars              `json:"eventChars"`
-	EventTypeOffset FieldOffset             `json:"eventTypeOffset"`
-	AddOrderOffsets AddOrderEventOffsets    `json:"addOrderOffsets"`
-	ModifyOrderOffsets ModifyOrderEventOffsets `json:"modifyOrderOffsets"`
+	EventChars          EventChars               `json:"eventChars"`
+	EventTypeOffset     FieldOffset              `json:"eventTypeOffset"`
+	AddOrderOffsets     AddOrderEventOffsets     `json:"addOrderOffsets"`
+	ModifyOrderOffsets  ModifyOrderEventOffsets  `json:"modifyOrderOffsets"`
 	ExecuteOrderOffsets ExecuteOrderEventOffsets `json:"executeOrderOffsets"`
-	CancelOrderOffsets CancelOrderEventOffsets `json:"cancelOrderOffsets"`
-	TradeOffsets TradeEventOffsets          `json:"tradeOffsets"`
+	CancelOrderOffsets  CancelOrderEventOffsets  `json:"cancelOrderOffsets"`
+	TradeOffsets        TradeEventOffsets        `json:"tradeOffsets"`
 }
 
 func LoadParserConfig(path string) (PitchFileParser, error) {
@@ -61,7 +61,6 @@ type AddOrderDetails struct {
 	Size    int
 }
 
-
 type ModifyOrderDetails struct {
 	OrderId string
 	Price   float32
@@ -73,9 +72,9 @@ type CancelOrderDetails struct {
 }
 
 type TradeDetails struct {
-	Symbol  string
-	Price   float32
-	Size    int
+	Symbol string
+	Price  float32
+	Size   int
 }
 
 type ExecutionDetails struct {
@@ -107,16 +106,14 @@ func (pp PitchFileParser) GetEvent(line string) EventType {
 func (pp PitchFileParser) GetAddOrderDetails(line string) AddOrderDetails {
 	OrderId := extractField(line, pp.AddOrderOffsets.OrderId)
 	Symbol := extractField(line, pp.AddOrderOffsets.Symbol)
-	Price64, _ := strconv.ParseFloat(extractField(line, pp.AddOrderOffsets.Price), 64)
-	Price := float32(Price64)
+	Price := convertStringToFloat32(extractField(line, pp.AddOrderOffsets.Price))
 	Size, _ := strconv.Atoi(extractField(line, pp.AddOrderOffsets.Size))
 	return AddOrderDetails{OrderId: OrderId, Symbol: Symbol, Price: Price, Size: Size}
 }
 
 func (pp PitchFileParser) GetModifyOrderDetails(line string) ModifyOrderDetails {
 	OrderId := extractField(line, pp.ModifyOrderOffsets.OrderId)
-	Price64, _ := strconv.ParseFloat(extractField(line, pp.ModifyOrderOffsets.Price), 64)
-	Price := float32(Price64)
+	Price := convertStringToFloat32(extractField(line, pp.ModifyOrderOffsets.Price))
 	Size, _ := strconv.Atoi(extractField(line, pp.ModifyOrderOffsets.Size))
 	return ModifyOrderDetails{OrderId: OrderId, Price: Price, Size: Size}
 }
@@ -127,7 +124,6 @@ func (pp PitchFileParser) GetOrderExecutedDetails(line string) ExecutionDetails 
 	return ExecutionDetails{OrderId: OrderId, Size: Size}
 }
 
-
 func (pp PitchFileParser) GetCancelOrderDetails(line string) CancelOrderDetails {
 	OrderId := extractField(line, pp.CancelOrderOffsets.OrderId)
 	return CancelOrderDetails{OrderId: OrderId}
@@ -135,8 +131,16 @@ func (pp PitchFileParser) GetCancelOrderDetails(line string) CancelOrderDetails 
 
 func (pp PitchFileParser) GetTradeDetails(line string) TradeDetails {
 	Symbol := extractField(line, pp.TradeOffsets.Symbol)
-	Price64, _ := strconv.ParseFloat(extractField(line, pp.TradeOffsets.Price), 64)
-	Price := float32(Price64)
+	Price := convertStringToFloat32(extractField(line, pp.TradeOffsets.Price))
 	Size, _ := strconv.Atoi(extractField(line, pp.TradeOffsets.Size))
 	return TradeDetails{Symbol: Symbol, Price: Price, Size: Size}
+}
+
+func convertStringToFloat32(val string) float32 {
+	// 10.50 --> 00001050
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		panic(err)
+	}
+	return float32(i) / 100.0
 }

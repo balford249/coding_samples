@@ -7,7 +7,7 @@ import (
 func newTestOrderBook() OrderBook {
 	return OrderBook{
 		Book:                    make(map[string]*Order),
-		QuantatiyTradedBySymbol: make(map[string]int),
+		VolumeTradedBySymbol: make(map[string]float32),
 	}
 }
 
@@ -163,8 +163,8 @@ func TestExecuteOrder_PartialFill(t *testing.T) {
 		t.Fatalf("expected size 6 got %d", ob.Book["1"].Size)
 	}
 
-	if ob.QuantatiyTradedBySymbol["AAPL"] != 4 {
-		t.Fatalf("expected traded quantity 4 got %d", ob.QuantatiyTradedBySymbol["AAPL"])
+	if ob.VolumeTradedBySymbol["AAPL"] != 400 {
+		t.Fatalf("expected traded quantity 4 got %f", ob.VolumeTradedBySymbol["AAPL"])
 	}
 }
 
@@ -183,8 +183,8 @@ func TestExecuteOrder_FullFill(t *testing.T) {
 		t.Fatalf("expected order removed when fully filled")
 	}
 
-	if ob.QuantatiyTradedBySymbol["AAPL"] != 10 {
-		t.Fatalf("expected traded quantity 10 got %d", ob.QuantatiyTradedBySymbol["AAPL"])
+	if ob.VolumeTradedBySymbol["AAPL"] != 1000 {
+		t.Fatalf("expected traded quantity 10 got %f", ob.VolumeTradedBySymbol["AAPL"])
 	}
 }
 
@@ -201,21 +201,21 @@ func TestExecuteOrder_NotFound(t *testing.T) {
 func TestHandleTrade(t *testing.T) {
 	ob := newTestOrderBook()
 
-	err := ob.HandleTrade("AAPL", 20)
+	err := ob.HandleTrade("AAPL", 20, 10)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if ob.QuantatiyTradedBySymbol["AAPL"] != 20 {
-		t.Fatalf("expected traded quantity 20 got %d", ob.QuantatiyTradedBySymbol["AAPL"])
+	if ob.VolumeTradedBySymbol["AAPL"] != 200 {
+		t.Fatalf("expected traded quantity 20 got %f", ob.VolumeTradedBySymbol["AAPL"])
 	}
 }
 
 func TestHandleTrade_InvalidSize(t *testing.T) {
 	ob := newTestOrderBook()
 
-	err := ob.HandleTrade("AAPL", 0)
+	err := ob.HandleTrade("AAPL", 0, 0)
 
 	if err == nil {
 		t.Fatalf("expected error for invalid trade size")
@@ -225,9 +225,9 @@ func TestHandleTrade_InvalidSize(t *testing.T) {
 func TestTopTradedSymbols(t *testing.T) {
 	ob := newTestOrderBook()
 
-	ob.QuantatiyTradedBySymbol["AAPL"] = 100
-	ob.QuantatiyTradedBySymbol["MSFT"] = 50
-	ob.QuantatiyTradedBySymbol["GOOG"] = 200
+	ob.VolumeTradedBySymbol["AAPL"] = 100
+	ob.VolumeTradedBySymbol["MSFT"] = 50
+	ob.VolumeTradedBySymbol["GOOG"] = 200
 
 	top := ob.TopTradedSymbols(2)
 

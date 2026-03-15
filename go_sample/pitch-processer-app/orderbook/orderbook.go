@@ -14,12 +14,12 @@ type Order struct {
 
 type OrderBook struct {
 	Book                    map[string] *Order
-	QuantatiyTradedBySymbol map[string]int
+	VolumeTradedBySymbol map[string]float32
 }
 
 type SymbolVolume struct {
 	Symbol          string
-	QuantatiyTraded int
+	VolumeTraded float32
 }
 
 func (ob *OrderBook) getOrder(orderID string) (*Order, error) {
@@ -74,8 +74,12 @@ func (ob *OrderBook) ExecuteOrder(orderId string, size int) error {
 		return err
 	}
 
+	if o.Size - size < 0 {
+		return errors.New("Execution amount is greater than order volume")
+	}
+
 	o.Size -= size
-	ob.QuantatiyTradedBySymbol[o.Symbol] += size
+	ob.VolumeTradedBySymbol[o.Symbol] += float32(size) * o.Price
 
 	if o.Size == 0 {
 		delete(ob.Book, orderId)
@@ -84,23 +88,23 @@ func (ob *OrderBook) ExecuteOrder(orderId string, size int) error {
 	return nil
 }
 
-func (ob *OrderBook) HandleTrade(symbol string, size int) error {
+func (ob *OrderBook) HandleTrade(symbol string, size int, price float32) error {
 	if size <= 0 {
 		return errors.New("trade size must be greater than zero")
 	}
-	ob.QuantatiyTradedBySymbol[symbol] += size
+	ob.VolumeTradedBySymbol[symbol] += float32(size) * price
 	return nil
 }
 
 func (ob OrderBook) TopTradedSymbols(noOfSymbols int) []SymbolVolume {
 	var items []SymbolVolume
 
-	for k, v := range ob.QuantatiyTradedBySymbol {
+	for k, v := range ob.VolumeTradedBySymbol {
 		items = append(items, SymbolVolume{k, v})
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].QuantatiyTraded > items[j].QuantatiyTraded
+		return items[i].VolumeTraded > items[j].VolumeTraded
 	})
 
 	var topSymbols []SymbolVolume

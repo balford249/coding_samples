@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -18,19 +19,25 @@ func padInt(n int, width int) string {
 	return fmt.Sprintf("%0*d", width, n)
 }
 
-func Add(orderId string, symbol string, price int, size int) string {
+func padFloat32(f float32, width int) string {
+	// 10.50 --> 00001050
+	n := int(math.Round(float64(f) * 100))
+	return fmt.Sprintf("%0*d", width, n)
+}
+
+func Add(orderId string, symbol string, price float32, size int) string {
 	return "A" +
 		padRight(orderId, 10) +
 		padRight(symbol, 4) +
-		padInt(price, 8) +
+		padFloat32(price, 8) +
 		padInt(size, 6)
 }
 
-func Modify(orderId string, price int, size int) string {
+func Modify(orderId string, price float32, size int) string {
 	return "M" +
 		padRight(orderId, 10) +
 		padRight("", 4) +
-		padInt(price, 8) +
+		padFloat32(price, 8) +
 		padInt(size, 6)
 }
 
@@ -46,11 +53,11 @@ func Cancel(orderId string) string {
 	return "C" + padRight(orderId, 10)
 }
 
-func Trade(symbol string, price int, size int) string {
+func Trade(symbol string, price float32, size int) string {
 	return "T" +
 		padRight("", 10) + // orderId unused
 		padRight(symbol, 4) +
-		padInt(price, 8) +
+		padFloat32(price, 8) +
 		padInt(size, 6)
 }
 
@@ -61,12 +68,13 @@ func Lines(events ...string) string {
 func TestProcessPitchFile_SimpleScenario(t *testing.T) {
 
 	pitchData := Lines(
-		Add("1", "AAPL", 10000, 100),
-		Add("2", "MSFT", 20000, 80),
-		Execute("1", 50),
-		Modify("2", 21000, 100),
-		Execute("2", 40),
+		Add("1", "AAPL", 5.5, 10),
+		Add("2", "MSFT", 10.1, 8),
+		Execute("1", 5),
+		Modify("2", 10.5, 8),
+		Execute("2", 4),
 		Cancel("2"),
+		Trade("VOD", 10.50, 10),
 	)
 
 	file, err := os.CreateTemp("", "pitch")
@@ -78,13 +86,22 @@ func TestProcessPitchFile_SimpleScenario(t *testing.T) {
 	file.WriteString(pitchData)
 	file.Close()
 
-	result := processPitchFile(file.Name(), "testdata/parser.json")
+	result := processPitchFile(file.Name(), "pitchparser/testdata/pitchFileTypeA.json")
 
-	if len(result) == 0 {
-		t.Fatal("expected traded symbols")
-	}
+	for index, item := range [][]interface{}{
+		{"VOD", float32(105)},
+		{"MSFT", float32(42)},
+		{"AAPL", float32(27.5)},
+	} {
+		symbol := item[0].(string)
+		volume := item[1].(float32)
 
-	if result[0].Symbol != "AAPL" {
-		t.Errorf("expected AAPL got %s", result[0].Symbol)
+		if strings.TrimSpace(result[index].Symbol) != symbol {
+			t.Errorf("expected  %s got %s", symbol, result[index].Symbol)
+		}
+
+		if result[index].VolumeTraded != volume {
+			t.Errorf("expected  %f got %f", volume, result[index].VolumeTraded)
+		}
 	}
 }

@@ -30,7 +30,7 @@
   },
   "tradeOffsets": {
     "symbol": { "start": 11, "end": 15 },
-    "price": { "start": 15, "end": 20 },
+    "price": { "start": 15, "end": 23 },
     "size": { "start": 23, "end": 29 }
   }
 }

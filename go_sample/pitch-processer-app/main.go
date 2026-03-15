@@ -31,7 +31,7 @@ func processPitchFile(pitchFilePath string, pitchParserConfigFilePath string) []
 	parser := pitchparser.NewPitchParser(pitchParserConfigFilePath)
 	ob := orderbook.OrderBook{
 		Book:                    make(map[string]*orderbook.Order),
-		QuantatiyTradedBySymbol: make(map[string]int),
+		VolumeTradedBySymbol: make(map[string]float32),
 	}
 
 	file, err := os.Open(pitchFilePath)
@@ -66,6 +66,9 @@ func processPitchFile(pitchFilePath string, pitchParserConfigFilePath string) []
 		case pitchparser.ModifyOrder:
 			details := parser.GetModifyOrderDetails(line)
 			ob.ModifyOrder(details.OrderId, details.Size, details.Price)
+		case pitchparser.Trade:
+			details := parser.GetTradeDetails(line)
+			ob.HandleTrade(details.Symbol, details.Size, details.Price)
 		}
 
 	}
