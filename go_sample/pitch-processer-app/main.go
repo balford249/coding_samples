@@ -77,19 +77,14 @@ func processPitchFile(pitchFilePath string, pitchParserConfigFilePath string) []
 		fmt.Println("Error reading file:", err)
 	}
 
-	return ob.TopTradedSymbols(5)
+	return ob.TopTradedSymbols()
 
 }
 
-// Logging
-// Naming
-// Load the JSON file and create a parser
-// Create a book struct
-// For each line in the file:
-// get the event
-// switch off the event to create an order object etc and then feed that into the book
-// Get the top n symbols, if n not provided output them all
 func main() {
 	args := parseArgs()
-	processPitchFile(args.PitchFile, args.ConfigFile)
+	results := processPitchFile(args.PitchFile, args.ConfigFile)
+	for _, volume := range results{
+		fmt.Print(volume)
+	}
 }

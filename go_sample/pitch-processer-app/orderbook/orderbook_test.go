@@ -229,10 +229,10 @@ func TestTopTradedSymbols(t *testing.T) {
 	ob.VolumeTradedBySymbol["MSFT"] = 50
 	ob.VolumeTradedBySymbol["GOOG"] = 200
 
-	top := ob.TopTradedSymbols(2)
+	top := ob.TopTradedSymbols()
 
-	if len(top) != 2 {
-		t.Fatalf("expected 2 results got %d", len(top))
+	if len(top) != 3 {
+		t.Fatalf("expected 3 results got %d", len(top))
 	}
 
 	if top[0].Symbol != "GOOG" {

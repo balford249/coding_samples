@@ -96,7 +96,7 @@ func (ob *OrderBook) HandleTrade(symbol string, size int, price float32) error {
 	return nil
 }
 
-func (ob OrderBook) TopTradedSymbols(noOfSymbols int) []SymbolVolume {
+func (ob OrderBook) TopTradedSymbols() []SymbolVolume {
 	var items []SymbolVolume
 
 	for k, v := range ob.VolumeTradedBySymbol {
@@ -107,10 +107,5 @@ func (ob OrderBook) TopTradedSymbols(noOfSymbols int) []SymbolVolume {
 		return items[i].VolumeTraded > items[j].VolumeTraded
 	})
 
-	var topSymbols []SymbolVolume
-	for i := 0; i < noOfSymbols && i < len(items); i++ {
-		topSymbols = append(topSymbols, items[i])
-	}
-
-	return topSymbols
+	return items
 }
