@@ -85,6 +85,6 @@ func main() {
 	args := parseArgs()
 	results := processPitchFile(args.PitchFile, args.ConfigFile)
 	for _, volume := range results{
-		fmt.Print(volume)
+		fmt.Print("%s : %f", volume.Symbol, volume.VolumeTraded)
 	}
 }

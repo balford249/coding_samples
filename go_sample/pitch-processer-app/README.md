@@ -86,13 +86,13 @@ Responsibilities:
 Example command:
 
 ```bash
-./pitch-volume-tracker <pitch_file> <parser_config.json>
+./pitch-processer-app <pitch_file> <parser_config.json>
 ```
 
 Example:
 
 ```bash
-./pitch-volume-tracker data/pitch.txt config/pitch_offsets.json
+./pitch-processer-app data/pitch.txt config/pitch_offsets.json
 ```
 
 ---
@@ -104,9 +104,9 @@ After processing the file, the application prints a **volume summary per symbol*
 Example output:
 
 ```
-AAPL  125000
-MSFT  98000
-TSLA  45200
+AAPL : 125000
+MSFT : 98000
+TSLA : 45200
 ```
 
 ---
