@@ -65,13 +65,24 @@ This design allows the parser to be adapted to **different exchange venues**, as
 
 ### `orderbook`
 
-Handles parsed events and maintains the state required to track **traded volume per symbol**.
+Consume parsed events and maintains the state required to track **traded volume per symbol**.
 
 Responsibilities:
 
-- Process events emitted by the parser
+- Process events emitted by the event handler
 - Maintain symbol-level trade volume
 - Update state as new events are received
+
+---
+
+### `eventhandlers`
+
+Parses the PITCH line and feeds the order book so it can update its state
+
+Responsibilities:
+
+- Use the given pitchparser to parse the line and get the details required for the event
+- Call the correct orderbook function to update the state of the book for the event type
 
 ---
 
@@ -84,9 +95,11 @@ Responsibilities:
 1. Create a `pitchparser` using the **JSON configuration file** provided as a command-line argument.
 2. Create an `orderbook` instance.
 3. Open the **PITCH file** provided as a command-line argument.
-4. Parse each line of the PITCH file.
-5. Feed parsed events into the order book.
-6. After the file has been fully processed, output the **symbol volume summary**.
+4. Parse each line of the PITCH file:
+  - Gets the event type from the line
+  - Calls a dispatch to get the handler function for the event 
+  - Calls the handler 
+5. After the file has been fully processed, output the **symbol volume summary**.
 
 ---
 
