@@ -4,19 +4,24 @@ import (
 	"testing"
 )
 
-func newTestOrderBook() OrderBook {
-	return OrderBook{
-		Book:                    make(map[string]*Order),
-		VolumeTradedBySymbol: make(map[string]float32),
+func NewTestOrder(id, symbol string, price float32, size int) Order {
+	return Order{
+		ID:     id,
+		Symbol: symbol,
+		Price:  price,
+		Size:   size,
 	}
 }
 
+func NewStandardTestOrder() Order {
+	return NewTestOrder("1", "AAPL", 100, 10)
+}
 
 func TestAddOrder(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 	o := NewStandardTestOrder()
 
-	err := ob.AddOrder(o)
+	err := ob.AddOrder(&o)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -28,11 +33,11 @@ func TestAddOrder(t *testing.T) {
 }
 
 func TestAddOrder_Duplicate(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 	o := NewStandardTestOrder()
 
-	ob.AddOrder(o)
-	err := ob.AddOrder(o)
+	ob.AddOrder(&o)
+	err := ob.AddOrder(&o)
 
 	if err == nil {
 		t.Fatalf("expected duplicate order error")
@@ -41,7 +46,7 @@ func TestAddOrder_Duplicate(t *testing.T) {
 
 func TestModifyOrderSuccess(t *testing.T) {
 
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 
 	order := Order{
 		ID:     "1",
@@ -50,7 +55,7 @@ func TestModifyOrderSuccess(t *testing.T) {
 		Size:   10,
 	}
 
-	ob.AddOrder(order)
+	ob.AddOrder(&order)
 
 	err := ob.ModifyOrder("1", 20, 150)
 	if err != nil {
@@ -73,7 +78,7 @@ func TestModifyOrderSuccess(t *testing.T) {
 
 func TestModifyOrderOrderNotFound(t *testing.T) {
 
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 
 	err := ob.ModifyOrder("999", 10, 100)
 
@@ -82,51 +87,35 @@ func TestModifyOrderOrderNotFound(t *testing.T) {
 	}
 }
 
-func TestModifyOrderInvalidPrice(t *testing.T) {
+func TestModifyOrder_InvalidInputs(t *testing.T) {
 
-	ob := newTestOrderBook()
-
-	order := Order{
-		ID:     "1",
-		Symbol: "AAPL",
-		Price:  100,
-		Size:   10,
+	tests := []struct {
+		size  int
+		price float32
+	}{
+		{0, 100},
+		{10, 0},
 	}
 
-	ob.AddOrder(order)
+	for _, tt := range tests {
+		ob := NewOrderBook()
+		o := NewStandardTestOrder()
 
-	err := ob.ModifyOrder("1", 20, 0)
+		ob.AddOrder(&o)
 
-	if err == nil {
-		t.Fatalf("expected error for invalid price")
-	}
-}
+		err := ob.ModifyOrder("1", tt.size, tt.price)
 
-func TestModifyOrderInvalidSize(t *testing.T) {
-
-	ob := newTestOrderBook()
-
-	order := Order{
-		ID:     "1",
-		Symbol: "AAPL",
-		Price:  100,
-		Size:   10,
-	}
-
-	ob.AddOrder(order)
-
-	err := ob.ModifyOrder("1", 0, 200)
-
-	if err == nil {
-		t.Fatalf("expected error for invalid size")
+		if err == nil {
+			t.Fatalf("expected error")
+		}
 	}
 }
 
 func TestRemoveOrder(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 	o := NewStandardTestOrder()
 
-	ob.AddOrder(o)
+	ob.AddOrder(&o)
 	err := ob.RemoveOrder("1")
 
 	if err != nil {
@@ -139,7 +128,7 @@ func TestRemoveOrder(t *testing.T) {
 }
 
 func TestRemoveOrder_NotFound(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 
 	err := ob.RemoveOrder("missing")
 
@@ -149,10 +138,10 @@ func TestRemoveOrder_NotFound(t *testing.T) {
 }
 
 func TestExecuteOrder_PartialFill(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 	o := NewStandardTestOrder()
 
-	ob.AddOrder(o)
+	ob.AddOrder(&o)
 	err := ob.ExecuteOrder("1", 4)
 
 	if err != nil {
@@ -164,15 +153,15 @@ func TestExecuteOrder_PartialFill(t *testing.T) {
 	}
 
 	if ob.VolumeTradedBySymbol["AAPL"] != 400 {
-		t.Fatalf("expected traded quantity 4 got %f", ob.VolumeTradedBySymbol["AAPL"])
+		t.Fatalf("expected traded value 4 got %f", ob.VolumeTradedBySymbol["AAPL"])
 	}
 }
 
 func TestExecuteOrder_FullFill(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 	o := NewStandardTestOrder()
 
-	ob.AddOrder(o)
+	ob.AddOrder(&o)
 	err := ob.ExecuteOrder("1", 10)
 
 	if err != nil {
@@ -189,7 +178,7 @@ func TestExecuteOrder_FullFill(t *testing.T) {
 }
 
 func TestExecuteOrder_NotFound(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 
 	err := ob.ExecuteOrder("missing", 5)
 
@@ -198,8 +187,26 @@ func TestExecuteOrder_NotFound(t *testing.T) {
 	}
 }
 
+func TestExecuteOrder_InvalidInputs(t *testing.T) {
+
+	tests := []int{10000, 0}
+
+	for _, tt := range tests {
+		ob := NewOrderBook()
+		o := NewStandardTestOrder()
+
+		ob.AddOrder(&o)
+
+		err := ob.ExecuteOrder("1", tt)
+
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+	}
+}
+
 func TestHandleTrade(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 
 	err := ob.HandleTrade("AAPL", 20, 10)
 
@@ -213,7 +220,7 @@ func TestHandleTrade(t *testing.T) {
 }
 
 func TestHandleTrade_InvalidSize(t *testing.T) {
-	ob := newTestOrderBook()
+	ob := NewOrderBook()
 
 	err := ob.HandleTrade("AAPL", 0, 0)
 
@@ -222,14 +229,14 @@ func TestHandleTrade_InvalidSize(t *testing.T) {
 	}
 }
 
-func TestTopTradedSymbols(t *testing.T) {
-	ob := newTestOrderBook()
+func TestSymbolVolumes(t *testing.T) {
+	ob := NewOrderBook()
 
 	ob.VolumeTradedBySymbol["AAPL"] = 100
 	ob.VolumeTradedBySymbol["MSFT"] = 50
 	ob.VolumeTradedBySymbol["GOOG"] = 200
 
-	top := ob.TopTradedSymbols()
+	top := ob.SymbolVolumes()
 
 	if len(top) != 3 {
 		t.Fatalf("expected 3 results got %d", len(top))

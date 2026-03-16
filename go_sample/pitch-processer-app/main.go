@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"pitch-processer-app/eventhandlers"
 	"pitch-processer-app/orderbook"
 	"pitch-processer-app/pitchparser"
 )
@@ -21,70 +22,93 @@ func parseArgs() Args {
 
 	flag.Parse()
 
+	if *pitchFile == "" || *configFile == "" {
+		fmt.Println("usage: app -pitchFile <file> -config <config>")
+		os.Exit(1)
+	}
+
 	return Args{
 		PitchFile:  *pitchFile,
 		ConfigFile: *configFile,
 	}
 }
 
-func processPitchFile(pitchFilePath string, pitchParserConfigFilePath string) []orderbook.SymbolVolume{
-	parser := pitchparser.NewPitchParser(pitchParserConfigFilePath)
-	ob := orderbook.OrderBook{
-		Book:                    make(map[string]*orderbook.Order),
-		VolumeTradedBySymbol: make(map[string]float32),
+func failOnErr(err error, context string) {
+	if err != nil {
+		fmt.Printf("%s failed: %v\n", context, err)
+		os.Exit(1)
 	}
+}
+
+type eventHandler func(
+	ob *orderbook.OrderBook,
+	parser pitchparser.PitchFileParser,
+	line string,
+) error
+
+var handlers = map[byte]eventHandler{
+	byte(pitchparser.AddOrder):     eventhandlers.HandleAddOrder,
+	byte(pitchparser.ModifyOrder):  eventhandlers.HandleModifyOrder,
+	byte(pitchparser.CancelOrder):  eventhandlers.HandleCancelOrder,
+	byte(pitchparser.ExecuteOrder): eventhandlers.HandleExecuteOrder,
+	byte(pitchparser.Trade):        eventhandlers.HandleTrade,
+}
+
+func processPitchFile(pitchFilePath string, configPath string) ([]orderbook.SymbolVolume, error) {
+
+	parser, err := pitchparser.NewPitchParser(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	ob := orderbook.NewOrderBook()
 
 	file, err := os.Open(pitchFilePath)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return nil
+		return nil, err
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
+
 		line := scanner.Text()
-		event := parser.GetEvent(line)
-		switch event {
-		case pitchparser.AddOrder:
-			details := parser.GetAddOrderDetails(line)
-			newOrder := orderbook.Order{
-				ID:     details.OrderId,
-				Symbol: details.Symbol,
-				Price:  details.Price,
-				Size:   details.Size,
-			}
-			ob.AddOrder(newOrder)
-		case pitchparser.CancelOrder:
-			details := parser.GetCancelOrderDetails(line)
-			// Error handling 
-			ob.RemoveOrder(details.OrderId)
-		case pitchparser.ExecuteOrder:
-			details := parser.GetOrderExecutedDetails(line)
-			ob.ExecuteOrder(details.OrderId, details.Size)
-		case pitchparser.ModifyOrder:
-			details := parser.GetModifyOrderDetails(line)
-			ob.ModifyOrder(details.OrderId, details.Size, details.Price)
-		case pitchparser.Trade:
-			details := parser.GetTradeDetails(line)
-			ob.HandleTrade(details.Symbol, details.Size, details.Price)
+
+		if len(line) == 0 {
+			return nil, fmt.Errorf("unexpected empty line")
 		}
 
+		event, parserError := parser.GetEvent(line)
+		if parserError != nil {
+			return nil, fmt.Errorf("failed to get event for line: %s error: %w",line, err)
+		}
+		handler, exists := handlers[byte(event)]
+		if !exists {
+			return nil, fmt.Errorf("failed to get event handler for line: %s error: %w",line, err)
+		}
+
+		err := handler(ob, parser, line)
+		if err != nil {
+			return nil, fmt.Errorf("processing line failed, line: %s error: %w",line, err)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading file:", err)
+		return nil, err
 	}
 
-	return ob.TopTradedSymbols()
-
+	return ob.SymbolVolumes(), nil
 }
 
 func main() {
 	args := parseArgs()
-	results := processPitchFile(args.PitchFile, args.ConfigFile)
-	for _, volume := range results{
-		fmt.Print("%s : %f", volume.Symbol, volume.VolumeTraded)
+
+	results, err := processPitchFile(args.PitchFile, args.ConfigFile)
+	fmt.Printf("process of pitch file failed: %v\n", err)
+	os.Exit(1)
+
+	for _, volume := range results {
+		fmt.Printf("%s : %f\n", volume.Symbol, volume.VolumeTraded)
 	}
 }

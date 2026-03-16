@@ -15,24 +15,24 @@ type EventChars struct {
 }
 
 type AddOrderEventOffsets struct {
-	OrderId FieldOffset `json:"orderId"`
+	OrderID FieldOffset `json:"OrderID"`
 	Symbol  FieldOffset `json:"symbol"`
 	Price   FieldOffset `json:"price"`
 	Size    FieldOffset `json:"size"`
 }
 
 type ModifyOrderEventOffsets struct {
-	OrderId FieldOffset `json:"orderId"`
+	OrderID FieldOffset `json:"OrderID"`
 	Price   FieldOffset `json:"price"`
 	Size    FieldOffset `json:"size"`
 }
 
 type CancelOrderEventOffsets struct {
-	OrderId FieldOffset `json:"orderId"`
+	OrderID FieldOffset `json:"OrderID"`
 }
 
 type ExecuteOrderEventOffsets struct {
-	OrderId FieldOffset `json:"orderId"`
+	OrderID FieldOffset `json:"OrderID"`
 	Size    FieldOffset `json:"size"`
 }
 

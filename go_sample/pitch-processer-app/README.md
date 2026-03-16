@@ -19,9 +19,6 @@ To keep the implementation simple, the following assumptions are made:
 - **Single Currency**  
   All symbols trade in the same currency. No exchange rate conversion is required when calculating traded volume.
 
-- **Volume Reporting**  
-  The application outputs a summary of traded volume per symbol after the PITCH file has been fully processed.
-
 - **Price Formatting**  
   All prices are represented to **two decimal places (2DP)**.
 
@@ -30,6 +27,18 @@ Example:
 ```
 00001050 -> 10.50
 ```
+
+---
+
+## Things to note 
+
+Also with the aim to keep the implementation simple:
+
+- **Volume Reporting**  
+  The application only needs to outputs a summary of traded volume per symbol after the PITCH file to stdout.
+
+- **Error Handling**  
+  Application fails fast and logs to stdout instead of a log file.
 
 ---
 

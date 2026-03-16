@@ -12,14 +12,21 @@ type Order struct {
 	Size   int
 }
 
+type SymbolVolume struct {
+	Symbol       string
+	VolumeTraded float32
+}
+
 type OrderBook struct {
-	Book                    map[string] *Order
+	Book                 map[string]*Order
 	VolumeTradedBySymbol map[string]float32
 }
 
-type SymbolVolume struct {
-	Symbol          string
-	VolumeTraded float32
+func NewOrderBook() *OrderBook {
+	return &OrderBook{
+		Book:                 make(map[string]*Order),
+		VolumeTradedBySymbol: make(map[string]float32),
+	}
 }
 
 func (ob *OrderBook) getOrder(orderID string) (*Order, error) {
@@ -30,24 +37,36 @@ func (ob *OrderBook) getOrder(orderID string) (*Order, error) {
 	return o, nil
 }
 
-func (ob *OrderBook) AddOrder(order Order) error {
+func (ob *OrderBook) AddOrder(order *Order) error {
+
+	if order.ID == "" {
+		return errors.New("order id required")
+	}
+
+	if order.Price <= 0 {
+		return errors.New("price must be positive")
+	}
+
+	if order.Size <= 0 {
+		return errors.New("size must be positive")
+	}
 
 	if _, exists := ob.Book[order.ID]; exists {
 		return errors.New("order already exists")
 	}
 
-	ob.Book[order.ID] = &order
+	ob.Book[order.ID] = order
 	return nil
 }
 
-func (ob  *OrderBook) ModifyOrder(orderId string, newSize int, newPrice float32) error {
+func (ob *OrderBook) ModifyOrder(orderID string, newSize int, newPrice float32) error {
 	if newPrice <= 0 {
 		return errors.New("price update must be greater than zero")
 	}
 	if newSize <= 0 {
 		return errors.New("size update must be greater than zero")
 	}
-	o, err := ob.getOrder(orderId)
+	o, err := ob.getOrder(orderID)
 	if err != nil {
 		return err
 	}
@@ -56,33 +75,37 @@ func (ob  *OrderBook) ModifyOrder(orderId string, newSize int, newPrice float32)
 	return nil
 }
 
-func (ob *OrderBook) RemoveOrder(orderId string) error {
+func (ob *OrderBook) RemoveOrder(orderID string) error {
 
-	_, err := ob.getOrder(orderId)
+	_, err := ob.getOrder(orderID)
 	if err != nil {
 		return err
 	}
 
-	delete(ob.Book, orderId)
+	delete(ob.Book, orderID)
 	return nil
 }
 
-func (ob *OrderBook) ExecuteOrder(orderId string, size int) error {
+func (ob *OrderBook) ExecuteOrder(orderID string, size int) error {
 
-	o, err := ob.getOrder(orderId)
+	o, err := ob.getOrder(orderID)
 	if err != nil {
 		return err
 	}
 
-	if o.Size - size < 0 {
-		return errors.New("Execution amount is greater than order volume")
+	if size <= 0 {
+		return errors.New("execution size must be greater than zero")
+	}
+
+	if size > o.Size {
+		return errors.New("execution amount greater than order size")
 	}
 
 	o.Size -= size
 	ob.VolumeTradedBySymbol[o.Symbol] += float32(size) * o.Price
 
 	if o.Size == 0 {
-		delete(ob.Book, orderId)
+		delete(ob.Book, orderID)
 	}
 
 	return nil
@@ -96,16 +119,19 @@ func (ob *OrderBook) HandleTrade(symbol string, size int, price float32) error {
 	return nil
 }
 
-func (ob OrderBook) TopTradedSymbols() []SymbolVolume {
-	var items []SymbolVolume
+func (ob *OrderBook) SymbolVolumes() []SymbolVolume {
+	var symbolVolumes []SymbolVolume
 
 	for k, v := range ob.VolumeTradedBySymbol {
-		items = append(items, SymbolVolume{k, v})
+		symbolVolumes = append(symbolVolumes, SymbolVolume{
+			Symbol:       k,
+			VolumeTraded: v,
+		})
 	}
 
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].VolumeTraded > items[j].VolumeTraded
+	sort.Slice(symbolVolumes, func(i, j int) bool {
+		return symbolVolumes[i].VolumeTraded > symbolVolumes[j].VolumeTraded
 	})
 
-	return items
+	return symbolVolumes
 }
