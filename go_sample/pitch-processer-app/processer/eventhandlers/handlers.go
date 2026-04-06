@@ -1,8 +1,8 @@
-package eventhandlers
+package processer
 
 import (
-	"pitch-processer/orderbook"
-	"pitch-processer/pitchparser"
+	orderbook "pitch-processer-app/processer/orderbook"
+	pitchparser "pitch-processer-app/processer/pitchparser"
 )
 
 func HandleAddOrder(ob *orderbook.OrderBook, parser pitchparser.PitchFileParser, line string) error {

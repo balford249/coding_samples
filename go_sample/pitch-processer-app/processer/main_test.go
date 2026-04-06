@@ -1,8 +1,8 @@
-package main
+package processer
 
 import (
 	"os"
-	"pitch-processer/testutils"
+	testutils "pitch-processer-app/processer/testutils"
 	"strings"
 	"testing"
 )
@@ -16,13 +16,13 @@ func TestProcessPitchFile_SimpleScenario(t *testing.T) {
 		testutils.Add("2", "MSFT", 10.1, 8),
 		// Execute 5 of AAPL order so should be 5 * 5.5
 		testutils.Execute("1", 5),
-		// Modify MSFT order with a new price of 10.5 
+		// Modify MSFT order with a new price of 10.5
 		testutils.Modify("2", 10.5, 8),
 		// Execute MSFT order with the updated price of 10.5 and a size of 4
 		testutils.Execute("2", 4),
 		// Cancel MSFT order
 		testutils.Cancel("2"),
-		// Trade VOD for 10 at price 10.6. Trades can occur without orders as orders can be hidden. 
+		// Trade VOD for 10 at price 10.6. Trades can occur without orders as orders can be hidden.
 		testutils.Trade("VOD", 10.50, 10),
 	)
 
@@ -35,7 +35,7 @@ func TestProcessPitchFile_SimpleScenario(t *testing.T) {
 	file.WriteString(pitchData)
 	file.Close()
 
-	result, err := processPitchFile(file.Name(), "pitchparser/testdata/pitchFileFooExchange.json")
+	result, err := ProcessPitchFile(file.Name(), "pitchparser/testdata/pitchFileFooExchange.json")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

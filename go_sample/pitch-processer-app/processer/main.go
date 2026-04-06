@@ -1,13 +1,13 @@
-package main
+package processer
 
 import (
 	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	"pitch-processer/eventhandlers"
-	"pitch-processer/orderbook"
-	"pitch-processer/pitchparser"
+	eventhandlers  "pitch-processer-app/processer/eventhandlers"
+	orderbook "pitch-processer-app/processer/orderbook"
+	pitchparser "pitch-processer-app/processer/pitchparser"
 )
 
 type Args struct {
@@ -54,7 +54,7 @@ var handlers = map[byte]eventHandler{
 	byte(pitchparser.Trade):        eventhandlers.HandleTrade,
 }
 
-func processPitchFile(pitchFilePath string, configPath string) ([]orderbook.SymbolVolume, error) {
+func ProcessPitchFile(pitchFilePath string, configPath string) ([]orderbook.SymbolVolume, error) {
 
 	parser, err := pitchparser.NewPitchParser(configPath)
 	if err != nil {
@@ -104,7 +104,7 @@ func processPitchFile(pitchFilePath string, configPath string) ([]orderbook.Symb
 func main() {
 	args := parseArgs()
 
-	results, err := processPitchFile(args.PitchFile, args.ConfigFile)
+	results, err := ProcessPitchFile(args.PitchFile, args.ConfigFile)
 	fmt.Printf("process of pitch file failed: %v\n", err)
 	os.Exit(1)
 

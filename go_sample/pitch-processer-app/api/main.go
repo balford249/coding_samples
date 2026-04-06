@@ -1,11 +1,11 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
@@ -26,7 +26,7 @@ var kafkaProducer *kafka.Producer
 var config Config
 
 func loadConfig() error {
-	data, err := ioutil.ReadFile("config.json")
+	data, err := os.ReadFile("config.json")
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %v", err)
 	}

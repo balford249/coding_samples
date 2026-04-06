@@ -1,11 +1,11 @@
-package eventhandlers
+package processer
 
 import (
 	"testing"
 
-	"pitch-processer/orderbook"
-	"pitch-processer/pitchparser"
-	"pitch-processer/testutils"
+	orderbook "pitch-processer-app/processer/orderbook"
+	pitchparser "pitch-processer-app/processer/pitchparser"
+	testutils "pitch-processer-app/processer/testutils"
 )
 
 func newTestEnv(t *testing.T) (*orderbook.OrderBook, pitchparser.PitchFileParser) {

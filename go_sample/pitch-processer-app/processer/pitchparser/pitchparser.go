@@ -1,4 +1,4 @@
-package pitchparser
+package processer
 
 import (
 	"encoding/json"
