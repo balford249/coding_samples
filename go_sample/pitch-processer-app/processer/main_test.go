@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"pitch-processer-app/testutils"
+	"pitch-processer/testutils"
 	"strings"
 	"testing"
 )

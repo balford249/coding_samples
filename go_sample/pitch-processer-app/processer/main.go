@@ -5,9 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"pitch-processer-app/eventhandlers"
-	"pitch-processer-app/orderbook"
-	"pitch-processer-app/pitchparser"
+	"pitch-processer/eventhandlers"
+	"pitch-processer/orderbook"
+	"pitch-processer/pitchparser"
 )
 
 type Args struct {

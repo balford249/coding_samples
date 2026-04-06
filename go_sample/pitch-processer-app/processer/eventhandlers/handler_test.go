@@ -3,9 +3,9 @@ package eventhandlers
 import (
 	"testing"
 
-	"pitch-processer-app/orderbook"
-	"pitch-processer-app/pitchparser"
-	"pitch-processer-app/testutils"
+	"pitch-processer/orderbook"
+	"pitch-processer/pitchparser"
+	"pitch-processer/testutils"
 )
 
 func newTestEnv(t *testing.T) (*orderbook.OrderBook, pitchparser.PitchFileParser) {
