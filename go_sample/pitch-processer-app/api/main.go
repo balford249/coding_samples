@@ -6,9 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/google/uuid"
+	database "pitch-processer-app/database"
 )
 
 type Payload struct {
@@ -24,6 +23,7 @@ type Config struct {
 
 var kafkaProducer *kafka.Producer
 var config Config
+var db database.Store
 
 func loadConfig() error {
 	data, err := os.ReadFile("config.json")
@@ -51,7 +51,7 @@ func initKafkaProducer() (*kafka.Producer, error) {
 // POST handler for /pitchprocesser/
 func pitchProcessHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate a unique request ID, TODO - check if in Postgres table
-	requestID := uuid.New().String() // Generate a unique UUID for this request
+	requestID := db.CreateNewProcessingEvent()
 
 	var payload Payload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -66,7 +66,7 @@ func pitchProcessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	kafkaMessageWithID := struct {
-		ID      string  `json:"id"`
+		ID      int64  `json:"id"`
 		Payload Payload `json:"payload"`
 	}{
 		ID:      requestID,
@@ -102,7 +102,7 @@ func pitchProcessHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	response := struct {
-		ID string `json:"id"`
+		ID int64 `json:"id"`
 	}{
 		ID: requestID,
 	}
@@ -114,6 +114,7 @@ func pitchProcessHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var err error
+	db = *database.InitDB("user=appuser dbname=pitchprocessing")
 	kafkaProducer, err = initKafkaProducer()
 	if err != nil {
 		log.Fatalf("Error initializing Kafka producer: %v", err)
@@ -122,8 +123,7 @@ func main() {
 
 	http.HandleFunc("/pitchprocesser/", pitchProcessHandler)
 
-	// Start the server
-	port := ":8080"
+	port := config.APIPort
 	log.Printf("Starting server on port %s...", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)

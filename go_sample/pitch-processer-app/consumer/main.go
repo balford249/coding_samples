@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	database "pitch-processer-app/database"
 	processor "pitch-processer-app/processer"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -19,10 +20,12 @@ type Config struct {
 }
 
 type Message struct {
-	ID        int    `json:"id"`
-	Pitchfile string `json:"pitchfile"`
+	ID         int64  `json:"id"`
+	Pitchfile  string `json:"pitchfile"`
 	Configfile string `json:"configfile"`
 }
+
+var db database.Store
 
 // NewDB creates and returns a new database connection
 func NewDB() (*sql.DB, error) {
@@ -52,15 +55,15 @@ func getConfig() (Config, error) {
 	return cfg, err
 }
 
-func getKafkaConsumer() (*kafka.Consumer){
-	cfg, err :=  getConfig()
+func getKafkaConsumer() *kafka.Consumer {
+	cfg, err := getConfig()
 	if err != nil {
 		log.Fatalf("Error parsing config data: %v", err)
 	}
-	
+
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": cfg.Broker,
-		"group.id":          "pitch-processor-app", 
+		"group.id":          "pitch-processor-app",
 		"auto.offset.reset": "earliest",
 	})
 	if err != nil {
@@ -69,18 +72,14 @@ func getKafkaConsumer() (*kafka.Consumer){
 	return consumer
 }
 
+
 func main() {
+	db = *database.InitDB("user=appuser dbname=pitchprocessing")
 	var cfg Config
 	cfg, err := getConfig()
 	if err != nil {
 		log.Fatalf("Error parsing config data: %v", err)
 	}
-
-	db, err := NewDB()
-	if err != nil {
-		log.Fatalf("Error opening database connection: %v", err)
-	}
-	defer db.Close()
 
 	consumer := getKafkaConsumer()
 	defer consumer.Close()
@@ -108,22 +107,7 @@ func main() {
 		if err != nil {
 			log.Printf("Error processing data: %v", err)
 		}
-				if err != nil {
-			log.Printf("Error processing data: %v", err)
-			continue
-		}
-
-		jsonData, err := json.Marshal(data)
-		if err != nil {
-			log.Printf("Error marshalling data into JSON: %v", err)
-			continue
-		}
-
-		_, err = db.Exec("INSERT INTO data_table (id, json_data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET json_data = excluded.json_data", message.ID, jsonData)
-		if err != nil {
-			log.Printf("Error inserting into database: %v", err)
-			continue
-		}
+		db.InsertResult(message.ID, data)
 
 		fmt.Printf("Inserted data for ID %d\n", message.ID)
 	}
