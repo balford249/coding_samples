@@ -48,32 +48,20 @@ func initKafkaProducer() (*kafka.Producer, error) {
 	return producer, nil
 }
 
-// POST handler for /pitchprocesser/
-func fileEvalHandler(w http.ResponseWriter, r *http.Request) {
-
+func handlePost(w http.ResponseWriter, r *http.Request) {
 	var payload Payload
 
-	// Step 2: Decode the request body
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&payload); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON body: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	// Step 3: Additional field validation (optional, depends on your use case)
 	if payload.FilePath == "" {
 		http.Error(w, "Missing required field: path", http.StatusBadRequest)
 		return
 	}
 
-	// Step 4: Marshal the payload back to check for any potential errors
-	_, err := json.Marshal(payload)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to convert payload to JSON: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Generate a unique request ID, TODO - check if in Postgres table
 	requestID := db.CreateNewEvent()
 
 	kafkaMessageWithID := struct {
@@ -91,17 +79,13 @@ func fileEvalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	kafkaTopic := config.Topic
-
-	// GO uses channels to communicate between goroutines.
-	// This creates a buffered channel that holds one event of type kafka.Event. The Kafka producer sends a delivery
-	// report to this channel after it produces a message.
 	deliveryChan := make(chan kafka.Event, 1)
+
 	err = kafkaProducer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &kafkaTopic, Partition: kafka.PartitionAny},
 		Value:          kafkaMessageWithIDBytes,
 	}, deliveryChan)
 
-	// gets the delivery back from the kafka producer and asserts thats it can be constructed into a Kafka.Message
 	e := <-deliveryChan
 	msg := e.(*kafka.Message)
 
@@ -110,17 +94,61 @@ func fileEvalHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	response := struct {
 		ID int64 `json:"id"`
 	}{
 		ID: requestID,
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
 	close(deliveryChan)
+}
+
+func handleGet(w http.ResponseWriter, r *http.Request) {
+	// Expect: /evaluate?id=123
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
+		http.Error(w, "Missing id parameter", http.StatusBadRequest)
+		return
+	}
+
+	var id int64
+	_, err := fmt.Sscanf(idParam, "%d", &id)
+	if err != nil {
+		http.Error(w, "Invalid id format", http.StatusBadRequest)
+		return
+	}
+
+	// TODO: implement this in your db package
+	result, err := db.GetEvent(id)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to fetch event: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if result == nil {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func fileEvalHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+
+	case http.MethodPost:
+		handlePost(w, r)
+
+	case http.MethodGet:
+		handleGet(w, r)
+
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func main() {

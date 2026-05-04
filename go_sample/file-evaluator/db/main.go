@@ -12,9 +12,14 @@ type Store struct {
 	DB *sql.DB
 }
 
-func InitDB(connStr string) (*Store) {
+type EvaluationResult struct {
+	Status string `json:"status"`
+	Result *bool  `json:"result,omitempty"`
+}
+
+func InitDB(connStr string) *Store {
 	var db *sql.DB
-	
+
 	var err error
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
@@ -46,6 +51,25 @@ func (s *Store) CreateNewEvent() int64 {
 	}
 
 	return id
+}
+
+func (s *Store) GetEvent(id int64) (*EvaluationResult, error) {
+	var res EvaluationResult
+
+	err := s.DB.QueryRow(
+		`SELECT status, result 
+		 FROM file_evaluation 
+		 WHERE id = $1`, id,
+	).Scan(&res.Status, &res.Result)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // not found
+		}
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 func (s *Store) InsertResult(processingId int64, result bool) {
