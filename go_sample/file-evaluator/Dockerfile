@@ -5,7 +5,7 @@ COPY . .
 
 # Build API
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o api /api
+    go build -o eval-api ./api
 
 # Build Consumer
 #RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \

@@ -42,7 +42,7 @@ services:
   
   api:
     build: .
-    command: ["./api"]
+    command: ["./eval-api"]
     ports:
       - "8080:8080"
     depends_on:
