@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: eval-postgres
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: eval
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d  
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: eval-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft settings
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_NODE_ID: "1"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      CLUSTER_ID: "3KcQx9QhQ7a8yXqZbLw0Gg"      
+      
+      # Listeners
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+
+      # Storage
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      
+      # Single-node dev settings
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+  
+  api:
+    build: .
+    command: ["./api"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - kafka
+      
+volumes:
+  postgres_data:
+  kafka_data:
