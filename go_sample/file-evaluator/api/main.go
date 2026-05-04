@@ -154,7 +154,7 @@ func fileEvalHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var err error
 	loadConfig()
-	db = *database.InitDB("user=appuser dbname=eval password=password")
+	db = *database.InitDB()
 	kafkaProducer, err = initKafkaProducer()
 	if err != nil {
 		log.Fatalf("Error initializing Kafka producer: %v", err)

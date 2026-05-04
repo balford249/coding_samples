@@ -1,5 +1,5 @@
 {
-  "broker": "localhost:9092",
+  "broker": "kafka:9092",
   "topic": "file-eval",
   "apiPort": 8080
 }

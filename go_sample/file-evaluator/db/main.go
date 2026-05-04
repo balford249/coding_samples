@@ -17,11 +17,11 @@ type EvaluationResult struct {
 	Result *bool  `json:"result,omitempty"`
 }
 
-func InitDB(connStr string) *Store {
+func InitDB() *Store {
 	var db *sql.DB
 
 	var err error
-	db, err = sql.Open("postgres", connStr)
+	db, err = sql.Open("postgres", "user=appuser dbname=eval host=postgres password=password sslmode=disable")
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}

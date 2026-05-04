@@ -2,10 +2,10 @@ package evaluator
 
 import (
 	"encoding/json"
+	database "file-evaluator/db"
 	"fmt"
 	"log"
 	"os"
-	database "file-evaluator/db"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	_ "github.com/lib/pq"
@@ -18,12 +18,11 @@ type Config struct {
 }
 
 type Message struct {
-	ID         int64  `json:"id"`
-	FilePath  string `json:"path"`
+	ID       int64  `json:"id"`
+	FilePath string `json:"path"`
 }
 
 var db database.Store
-
 
 func getConfig() (Config, error) {
 	file, err := os.Open("config.json")
@@ -42,7 +41,7 @@ func getConfig() (Config, error) {
 	return cfg, err
 }
 
-// TODO - Get group from the eval name 
+// TODO - Get group from the eval name
 func getKafkaConsumer() *kafka.Consumer {
 	cfg, err := getConfig()
 	if err != nil {
@@ -60,7 +59,7 @@ func getKafkaConsumer() *kafka.Consumer {
 	return consumer
 }
 
-func eval(filePath string) (bool){
+func eval(filePath string) bool {
 	_, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("Error reading file %v: %v", filePath, err)
@@ -68,9 +67,8 @@ func eval(filePath string) (bool){
 	return true
 }
 
-
 func main() {
-	db = *database.InitDB("user=appuser dbname=pitchprocessing")
+	db = *database.InitDB()
 	var cfg Config
 	cfg, err := getConfig()
 	if err != nil {
