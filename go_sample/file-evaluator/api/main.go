@@ -15,6 +15,11 @@ type Payload struct {
 	FilePath string `json:"path"`
 }
 
+type Message struct {
+	ID       int64  `json:"id"`
+	FilePath string `json:"path"`
+}
+
 type Config struct {
 	Broker  string `json:"broker"`
 	Topic   string `json:"topic"`
@@ -64,12 +69,9 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 
 	requestID := db.CreateNewEvent()
 
-	kafkaMessageWithID := struct {
-		ID      int64   `json:"id"`
-		Payload Payload `json:"payload"`
-	}{
-		ID:      requestID,
-		Payload: payload,
+	kafkaMessageWithID := Message{
+		ID:       requestID,
+		FilePath: payload.FilePath,
 	}
 
 	kafkaMessageWithIDBytes, err := json.Marshal(kafkaMessageWithID)

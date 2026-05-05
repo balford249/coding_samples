@@ -1,0 +1,4 @@
+{
+  "broker": "kafka:9092",
+  "topic": "file-eval"
+}

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -27,7 +28,7 @@ func InitDB() *Store {
 	}
 
 	// Optional but recommended
-	err = db.Ping()
+	err = pingWithRetry(db, 3)
 	if err != nil {
 		log.Fatalf("Database unreachable: %v", err)
 	}
@@ -37,6 +38,30 @@ func InitDB() *Store {
 	db.SetMaxIdleConns(10)
 
 	return &Store{db}
+}
+
+func pingWithRetry(db *sql.DB, maxAttempts int) error {
+	var err error
+
+	baseDelay := 1 * time.Second
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err = db.Ping()
+		if err == nil {
+			return nil
+		}
+
+		log.Printf("Ping attempt %d failed: %v", attempt, err)
+
+		if attempt < maxAttempts {
+			// exponential backoff: 1s, 2s, 4s...
+			backoff := baseDelay * time.Duration(1<<(attempt-1))
+			log.Printf("Retrying in %v...", backoff)
+			time.Sleep(backoff)
+		}
+	}
+
+	return err
 }
 
 func (s *Store) CreateNewEvent() int64 {
@@ -78,7 +103,7 @@ func (s *Store) InsertResult(processingId int64, result bool) {
 		log.Printf("Error marshalling data into JSON: %v", err)
 	}
 
-	_, err = s.DB.Exec("UPDATE pitch_processing_event SET result = $1, WHERE id = $2", jsonData, processingId)
+	_, err = s.DB.Exec("UPDATE file_evaluation SET result = $1, result_ts=$2, status='complete' WHERE id = $3", jsonData, time.Now(), processingId)
 	if err != nil {
 		log.Printf("Error inserting into database: %v", err)
 	}

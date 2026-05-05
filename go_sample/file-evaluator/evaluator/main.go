@@ -1,4 +1,4 @@
-package evaluator
+package main
 
 import (
 	"encoding/json"
@@ -97,6 +97,8 @@ func main() {
 			continue
 		}
 
+		log.Printf("%d", message.ID)
+		log.Printf(message.FilePath)
 		res := eval(message.FilePath)
 		if err != nil {
 			log.Printf("Error processing data: %v", err)

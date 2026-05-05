@@ -1,0 +1,25 @@
+FROM golang:1.22 AS builder
+
+RUN apt-get update && apt-get install -y \
+    librdkafka-dev \
+    gcc \
+    g++
+
+
+WORKDIR /src
+COPY . .
+
+
+
+# Build API
+RUN go build -o eval-consumer ./evaluator
+
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+COPY --from=builder /src/eval-consumer . 
+RUN chmod +x eval-consumer
+
+COPY --from=builder /src/evaluator/config.json .
+
