@@ -11,6 +11,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d  
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d eval"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: eval-kafka
@@ -37,17 +44,44 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
 
+      # Development ease
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+
     volumes:
       - kafka_data:/var/lib/kafka/data
+    
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cub kafka-ready -b kafka:9092 1 20"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
   
   api:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.api
+    
     command: ["./eval-api"]
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+          condition: service_healthy
+      kafka:
+          condition: service_healthy
+
+  consumer:
+    build: 
+      context: .
+      dockerfile: Dockerfile.consumer
+    command: ["./eval-consumer"]
+    depends_on:
+      postgres:
+          condition: service_healthy
+      kafka:
+          condition: service_healthy
+    volumes:
+      - /tmp:/tmp
       
 volumes:
   postgres_data:
