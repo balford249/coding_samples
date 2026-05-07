@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -64,18 +65,17 @@ func pingWithRetry(db *sql.DB, maxAttempts int) error {
 	return err
 }
 
-func (s *Store) CreateNewEvent() int64 {
+func (s *Store) CreateNewEvent() (int64, error) {
 	var id int64
 	err := s.DB.QueryRow(
 		"INSERT INTO file_evaluation (status) values ('working') RETURNING id",
 	).Scan(&id)
 
 	if err != nil {
-		log.Printf("Error inserting into database: %v", err)
-		return 0
+		return 0, fmt.Errorf("Error inserting into database: %v", err)
 	}
 
-	return id
+	return id, nil
 }
 
 func (s *Store) GetEvent(id int64) (*EvaluationResult, error) {
