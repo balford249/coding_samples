@@ -65,10 +65,11 @@ func pingWithRetry(db *sql.DB, maxAttempts int) error {
 	return err
 }
 
-func (s *Store) CreateNewEvent() (int64, error) {
+func (s *Store) CreateNewEvent(evalType string) (int64, error) {
 	var id int64
 	err := s.DB.QueryRow(
-		"INSERT INTO file_evaluation (status) values ('working') RETURNING id",
+		"INSERT INTO file_evaluation (status, type) values ('working', $1) RETURNING id",
+		evalType,
 	).Scan(&id)
 
 	if err != nil {

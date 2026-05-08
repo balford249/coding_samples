@@ -17,6 +17,7 @@ type KafkaConsumer struct {
 type FileEvalEvent struct {
 	ID       int64  `json:"id"`
 	FilePath string `json:"path"`
+	EvalType string `json:"type"`
 }
 
 func InitKafkaConsumer(broker string) *KafkaConsumer {

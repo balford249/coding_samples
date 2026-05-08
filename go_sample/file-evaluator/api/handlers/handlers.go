@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
+	producer "file-evaluator/api/kafka"
 	database "file-evaluator/db"
 	"fmt"
 	"net/http"
-	producer "file-evaluator/api/kafka"
 )
 
 type Payload struct {
 	FilePath string `json:"path"`
+	EvalType string `json:"type"`
 }
 
 type HttpHandler struct {
@@ -20,9 +21,8 @@ type HttpHandler struct {
 type Message struct {
 	ID       int64  `json:"id"`
 	FilePath string `json:"path"`
+	EvalType string `json:"type"`
 }
-
-
 
 func (h *HttpHandler) FileEvalHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -43,7 +43,7 @@ func (h *HttpHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 	if payloadErr != nil {
 		http.Error(w, payloadErr.Error(), http.StatusBadRequest)
 	}
-	requestID, DBErr := h.DB.CreateNewEvent()
+	requestID, DBErr := h.DB.CreateNewEvent(payload.EvalType)
 	if DBErr != nil {
 		http.Error(w, DBErr.Error(), http.StatusInternalServerError)
 	}
@@ -124,6 +124,7 @@ func produceKafkaMessage(producer *producer.KafkaProducer, requestID int64, payl
 	kafkaMessageWithID := Message{
 		ID:       requestID,
 		FilePath: payload.FilePath,
+		EvalType: payload.EvalType,
 	}
 
 	kafkaMessageWithIDBytes, err := json.Marshal(kafkaMessageWithID)

@@ -1,10 +1,11 @@
-package main
+package consumer
 
 import (
 	"context"
 	Consumer "file-evaluator/consumer/generic_consumer"
 	database "file-evaluator/db"
 	utils "file-evaluator/utils"
+	evals "file-evaluator/evaluators"
 	"fmt"
 	"log"
 	"os"
@@ -21,6 +22,7 @@ type Config struct {
 type Message struct {
 	ID       int64  `json:"id"`
 	FilePath string `json:"path"`
+	EvalType string `json:"type"`
 }
 
 func eval(filePath string) bool {
@@ -57,8 +59,11 @@ func main() {
 
 	for msg := range ch {
 		event := msg.(Message)
-		res := eval(event.FilePath)
-		db.InsertResult(event.ID, res)
+		res, err := evals.Registry[event.EvalType].Evaluate(event.FilePath)
+		if err != nil {
+			// TODO 
+		}
+		db.InsertResult(event.ID, res.Passed)
 		
 	}
 
