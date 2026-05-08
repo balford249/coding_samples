@@ -3,9 +3,9 @@ package processer
 import (
 	"testing"
 
-	orderbook "pitch-processer-app/processer/orderbook"
-	pitchparser "pitch-processer-app/processer/pitchparser"
-	testutils "pitch-processer-app/processer/testutils"
+	orderbook "pitch-processer-app/orderbook"
+	pitchparser "pitch-processer-app/pitchparser"
+	testutils "pitch-processer-app/testutils"
 )
 
 func newTestEnv(t *testing.T) (*orderbook.OrderBook, pitchparser.PitchFileParser) {

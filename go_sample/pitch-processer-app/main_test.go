@@ -1,8 +1,8 @@
-package processer
+package main
 
 import (
 	"os"
-	testutils "pitch-processer-app/processer/testutils"
+	testutils "pitch-processer-app/testutils"
 	"strings"
 	"testing"
 )

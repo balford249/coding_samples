@@ -2,7 +2,7 @@ package processer
 
 import (
 	"testing"
-	testutils "pitch-processer-app/processer/testutils"
+	testutils "pitch-processer-app/testutils"
 )
 
 func newTestParser(t *testing.T) PitchFileParser {

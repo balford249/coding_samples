@@ -1,13 +1,13 @@
-package processer
+package main
 
 import (
 	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	eventhandlers  "pitch-processer-app/processer/eventhandlers"
-	orderbook "pitch-processer-app/processer/orderbook"
-	pitchparser "pitch-processer-app/processer/pitchparser"
+	eventhandlers  "pitch-processer-app/eventhandlers"
+	orderbook "pitch-processer-app/orderbook"
+	pitchparser "pitch-processer-app/pitchparser"
 )
 
 type Args struct {
