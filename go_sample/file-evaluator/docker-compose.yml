@@ -10,79 +10,117 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d  
-    
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - eval-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d eval"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: eval-kafka
     ports:
       - "9092:9092"
+    networks:
+      - eval-net
     environment:
-      # KRaft settings
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_NODE_ID: "1"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
-      CLUSTER_ID: "3KcQx9QhQ7a8yXqZbLw0Gg"      
-      
-      # Listeners
-      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      CLUSTER_ID: "3KcQx9QhQ7a8yXqZbLw0Gg"
+
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
-      # Storage
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      
-      # Single-node dev settings
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
 
-      # Development ease
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
     volumes:
       - kafka_data:/var/lib/kafka/data
-    
+
     healthcheck:
-      test: ["CMD", "bash", "-c", "cub kafka-ready -b kafka:9092 1 20"]
+      test: ["CMD-SHELL", "cub kafka-ready -b localhost:9092 1 30"]
       interval: 10s
       timeout: 10s
       retries: 10
-  
+      start_period: 30s
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - eval-net
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      kafka-topics --create \
+        --if-not-exists \
+        --bootstrap-server kafka:9092 \
+        --topic file-eval \
+        --partitions 1 \
+        --replication-factor 1
+
   api:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.api
-    
     command: ["./eval-api"]
     ports:
       - "8080:8080"
+    networks:
+      - eval-net
     depends_on:
       postgres:
-          condition: service_healthy
+        condition: service_healthy
       kafka:
-          condition: service_healthy
+        condition: service_healthy
 
-  consumer:
-    build: 
+  file_exists_eval:
+    build:
       context: .
-      dockerfile: Dockerfile.consumer
-    command: ["./eval-consumer"]
+      dockerfile: Dockerfile.evaluator
+    command: ["./evaluator", "--config=FileExists.json"]
+    networks:
+      - eval-net
     depends_on:
       postgres:
-          condition: service_healthy
+        condition: service_healthy
       kafka:
-          condition: service_healthy
+        condition: service_healthy
     volumes:
       - /tmp:/tmp
-      
+
+ # is_txt_file_eval:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.evaluator
+#    command: ["./evaluator", "--config=IsTxtFile.json"]
+ #   networks:
+ #     - eval-net
+  #  depends_on:
+  #    postgres:
+  #      condition: service_healthy
+  #    kafka:
+  #      condition: service_healthy
+  #  volumes:
+   #   - /tmp:/tmp
+
 volumes:
   postgres_data:
   kafka_data:
+
+networks:
+  eval-net:

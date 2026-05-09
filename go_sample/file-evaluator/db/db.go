@@ -28,13 +28,11 @@ func InitDB() *Store {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
-	// Optional but recommended
 	err = pingWithRetry(db, 3)
 	if err != nil {
 		log.Fatalf("Database unreachable: %v", err)
 	}
 
-	// Configure pool
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(10)
 

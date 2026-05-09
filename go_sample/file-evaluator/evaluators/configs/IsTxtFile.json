@@ -1,0 +1,7 @@
+{
+  "broker": "kafka:9092",
+  "topic": "file-eval",
+  "group": "is_txt_file",
+  "type": "IsTxtFile"
+}
+

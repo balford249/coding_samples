@@ -1,0 +1,6 @@
+{
+  "broker": "kafka:9092",
+  "topic": "file-eval",
+  "group": "file_exists",
+  "type": "FileExists"
+}

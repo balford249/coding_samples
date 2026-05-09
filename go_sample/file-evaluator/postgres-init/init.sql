@@ -2,6 +2,7 @@ CREATE SEQUENCE eval_id;
 
 CREATE TABLE file_evaluation (
     id INTEGER DEFAULT nextval('eval_id'),
+    type TEXT,
     status TEXT,
     result boolean,
     request_ts timestamp DEFAULT now(), 

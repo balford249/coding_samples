@@ -18,8 +18,8 @@ type Config struct {
 
 
 func main() {
-	var config *Config
-	utils.LoadConfig("config.json", config)
+	var config Config
+	utils.LoadConfig("config.json", &config)
 	kafkaProducer := producer.InitKafkaProducer(config.Broker, config.Topic)
 
 	db := database.InitDB()
