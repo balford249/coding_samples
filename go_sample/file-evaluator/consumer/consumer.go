@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -123,25 +122,29 @@ func (k *KafkaConsumer) ConsumeMapped(
 			default:
 			}
 
-			msg, err := k.Consumer.ReadMessage(5000 * time.Millisecond)
-			if err != nil {
-				// safe: just log and continue
-				if kafkaErr, ok := err.(kafka.Error); ok {
-					log.Printf("kafka error: %v", kafkaErr)
+			ev := k.Consumer.Poll(1000) // 1 second timeout
+
+			if ev == nil {
+				// No event received within timeout.
+				continue
+			}
+
+			switch e := ev.(type) {
+			case *kafka.Message:
+				mapped, err := mapper(e)
+				if err != nil {
+					log.Printf("mapping error: %v", err)
+					continue
 				}
-				continue
-			}
 
-			mapped, err := mapper(msg)
-			if err != nil {
-				log.Printf("mapping error: %v", err)
-				continue
-			}
+				select {
+				case out <- mapped:
+				case <-ctx.Done():
+					return
+				}
 
-			select {
-			case out <- mapped:
-			case <-ctx.Done():
-				return
+			case kafka.Error:
+				log.Printf("kafka error: %v", e)
 			}
 		}
 	}()
