@@ -11,8 +11,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d
-    networks:
-      - eval-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d eval"]
       interval: 5s
@@ -25,8 +23,6 @@ services:
     container_name: eval-kafka
     ports:
       - "9092:9092"
-    networks:
-      - eval-net
     environment:
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_NODE_ID: "1"
@@ -57,21 +53,6 @@ services:
       retries: 10
       start_period: 30s
 
-  kafka-init:
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks:
-      - eval-net
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      kafka-topics --create \
-        --if-not-exists \
-        --bootstrap-server kafka:9092 \
-        --topic file-eval \
-        --partitions 1 \
-        --replication-factor 1
-
   api:
     build:
       context: .
@@ -79,8 +60,6 @@ services:
     command: ["./eval-api"]
     ports:
       - "8080:8080"
-    networks:
-      - eval-net
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,8 +71,6 @@ services:
       context: .
       dockerfile: Dockerfile.evaluator
     command: ["./evaluator", "--config=FileExists.json"]
-    networks:
-      - eval-net
     depends_on:
       postgres:
         condition: service_healthy
@@ -121,5 +98,3 @@ volumes:
   postgres_data:
   kafka_data:
 
-networks:
-  eval-net:
