@@ -1,13 +1,13 @@
 package main
 
 import (
+	handlers "file-evaluator/api/handlers"
+	producer "file-evaluator/api/kafka"
 	database "file-evaluator/db"
+	utils "file-evaluator/utils"
 	"fmt"
 	"log"
 	"net/http"
-	utils "file-evaluator/utils"
-	producer "file-evaluator/api/kafka"
-	handlers "file-evaluator/api/handlers"
 )
 
 type Config struct {
@@ -16,11 +16,11 @@ type Config struct {
 	APIPort int    `json:"apiPort"`
 }
 
-
 func main() {
 	var config Config
 	utils.LoadConfig("config.json", &config)
 	kafkaProducer := producer.InitKafkaProducer(config.Broker, config.Topic)
+	defer kafkaProducer.Close()
 
 	db := database.InitDB()
 	defer db.DB.Close()

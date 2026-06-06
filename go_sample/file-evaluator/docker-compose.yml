@@ -58,7 +58,6 @@ services:
       start_period: 30s
 
   kafka-init:
-    image: confluentinc/cp-kafka:7.5.0
     depends_on:
       kafka:
         condition: service_healthy

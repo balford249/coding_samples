@@ -1,18 +1,17 @@
 package producer
 
 import (
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"log"
-	
-)
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+)
 
 type KafkaProducer struct {
 	producer *kafka.Producer
-	topic string
+	topic    string
 }
 
-func InitKafkaProducer(broker string, topic string ) *KafkaProducer {
+func InitKafkaProducer(broker string, topic string) *KafkaProducer {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": broker,
 	})
@@ -23,13 +22,16 @@ func InitKafkaProducer(broker string, topic string ) *KafkaProducer {
 }
 
 func (p *KafkaProducer) ProduceEvent(event []byte) error {
-	defer p.producer.Close()
 	deliveryChan := make(chan kafka.Event, 1)
 
-	p.producer.Produce(&kafka.Message{
+	err := p.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &p.topic, Partition: kafka.PartitionAny},
 		Value:          event,
 	}, deliveryChan)
+
+	if err != nil {
+		return err
+	}
 
 	e := <-deliveryChan
 	msg := e.(*kafka.Message)
@@ -39,4 +41,9 @@ func (p *KafkaProducer) ProduceEvent(event []byte) error {
 		return msg.TopicPartition.Error
 	}
 	return nil
+}
+
+func (p *KafkaProducer) Close() {
+	p.producer.Flush(5000)
+	p.producer.Close()
 }
