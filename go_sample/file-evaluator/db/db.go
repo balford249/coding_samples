@@ -110,9 +110,10 @@ func (s *Store) GetEvent(id int64) ([]EvaluationResult, error) {
 	return results, nil
 }
 
-func (s *Store) InsertResult(processingId int64, result string, evalType string) {
+func (s *Store) InsertResult(processingId int64, result string, evalType string) error{
 	_, err := s.DB.Exec("INSERT INTO file_evaluation_result  VALUES ($1, $2, $3)", processingId, evalType, result)
 	if err != nil {
 		log.Printf("Error inserting into database: %v", err)
 	}
+	return err
 }

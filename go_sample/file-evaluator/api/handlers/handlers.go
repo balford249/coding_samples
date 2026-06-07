@@ -10,7 +10,6 @@ import (
 
 type Payload struct {
 	FilePath string `json:"path"`
-	EvalType string `json:"type"`
 }
 
 type HttpHandler struct {
@@ -21,7 +20,6 @@ type HttpHandler struct {
 type Message struct {
 	ID       int64  `json:"id"`
 	FilePath string `json:"path"`
-	EvalType string `json:"type"`
 }
 
 func (h *HttpHandler) FileEvalHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +41,7 @@ func (h *HttpHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 	if payloadErr != nil {
 		http.Error(w, payloadErr.Error(), http.StatusBadRequest)
 	}
-	requestID, DBErr := h.DB.CreateNewEvent(payload.EvalType)
+	requestID, DBErr := h.DB.CreateNewEvent()
 	if DBErr != nil {
 		http.Error(w, DBErr.Error(), http.StatusInternalServerError)
 	}
@@ -75,6 +73,11 @@ func (h *HttpHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(result) == 0 {
+		http.Error(w, "Event does not exist", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
@@ -92,20 +95,6 @@ func validateGetParams(r *http.Request) (int64, error) {
 	}
 
 	return id, nil
-}
-
-func getEventFromDatabase(id int64, DB *database.Store) ([]database.EvaluationResult, error) {
-	result, err := DB.GetEvent(id)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch event: %v", err)
-	}
-
-	if result == nil {
-		return nil, fmt.Errorf("ID not found: %d", id)
-	}
-
-	return result, nil
-
 }
 
 func validatePostPayload(r *http.Request) (Payload, error) {
@@ -126,7 +115,6 @@ func produceKafkaMessage(producer *producer.KafkaProducer, requestID int64, payl
 	kafkaMessageWithID := Message{
 		ID:       requestID,
 		FilePath: payload.FilePath,
-		EvalType: payload.EvalType,
 	}
 
 	kafkaMessageWithIDBytes, err := json.Marshal(kafkaMessageWithID)

@@ -8,9 +8,11 @@ import (
 	"flag"
 )
 
-var Registry = map[string]consumer.ConsumerType{
-	"FileExists": types.FileExistsConsumerType{DB: *db.InitDB()},
-	"IsTxtFile":  types.IsTxtFileConsumerType{DB: *db.InitDB()},
+func initRegistry(store *db.Store) map[string]consumer.ConsumerType {
+	return map[string]consumer.ConsumerType{
+		"FileExists": types.NewFileExistsConsumer(store),
+		"IsTxtFile":  types.NewIsTxtFileConsumer(store),
+	}
 }
 
 type EvaluatorConfig struct {
@@ -22,22 +24,22 @@ type EvaluatorConfig struct {
 
 func getConfigFile() string {
 	configFilePath := flag.String("config", "", "Filepath for the JSON config")
-
 	flag.Parse()
-
 	if *configFilePath == "" {
 		panic("--config is required")
 	}
-
 	return *configFilePath
 }
 
 func main() {
 	var config EvaluatorConfig
 	utils.LoadConfig(getConfigFile(), &config)
+
+	store := db.InitDB()
+	registry := initRegistry(store)
+
 	kafkaRunner := consumer.KafkaRunner{
-		ConsumerType: Registry[config.EvalType],
+		ConsumerType: registry[config.EvalType],
 		Config:       consumer.ConsumerConfig{Broker: config.Broker, Topic: config.Topic, GroupID: config.GroupID}}
 	kafkaRunner.Run()
 }
-
