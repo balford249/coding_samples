@@ -62,7 +62,7 @@ func pingWithRetry(db *sql.DB, maxAttempts int) error {
 	return err
 }
 
-func (s *Store) CreateNewEvent(evalType string) (int64, error) {
+func (s *Store) CreateNewEvent() (int64, error) {
 	var id int64
 	err := s.DB.QueryRow(
 		"INSERT INTO file_evaluation_event DEFAULT VALUES RETURNING id").Scan(&id)
@@ -76,9 +76,17 @@ func (s *Store) CreateNewEvent(evalType string) (int64, error) {
 
 func (s *Store) GetEvent(id int64) ([]EvaluationResult, error) {
 	rows, err := s.DB.Query(
-		`SELECT type, upper(coalesce(status, 'pending')) as status
-         FROM file_evaluation_result
-         WHERE eval_id = $1`, id,
+		`SELECT t.type, COALESCE(r.status, 'pending') AS status
+		FROM file_evaluation_type t
+		LEFT JOIN file_evaluation_result r
+		 ON r.type = t.type
+		 AND r.eval_id = $1
+		WHERE EXISTS (
+		 SELECT 1 
+    	FROM file_evaluation_event e
+    	WHERE e.id = $1
+		)
+		ORDER BY t.type;`, id,
 	)
 	if err != nil {
 		return nil, err
