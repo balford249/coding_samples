@@ -66,11 +66,13 @@ func (h *HttpHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 	id, paramErr := validateGetParams(r)
 	if paramErr != nil {
 		http.Error(w, paramErr.Error(), http.StatusBadRequest)
+		return
 	}
 
 	result, DBErr := h.DB.GetEvent(id)
 	if DBErr != nil {
 		http.Error(w, DBErr.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -92,7 +94,7 @@ func validateGetParams(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-func getEventFromDatabase(id int64, DB *database.Store) (*database.EvaluationResult, error) {
+func getEventFromDatabase(id int64, DB *database.Store) ([]database.EvaluationResult, error) {
 	result, err := DB.GetEvent(id)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch event: %v", err)

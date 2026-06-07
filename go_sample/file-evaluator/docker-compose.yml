@@ -79,20 +79,18 @@ services:
     volumes:
       - /tmp:/tmp
 
- # is_txt_file_eval:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile.evaluator
-#    command: ["./evaluator", "--config=IsTxtFile.json"]
- #   networks:
- #     - eval-net
-  #  depends_on:
-  #    postgres:
-  #      condition: service_healthy
-  #    kafka:
-  #      condition: service_healthy
-  #  volumes:
-   #   - /tmp:/tmp
+  is_txt_file_eval:
+    build:
+      context: .
+      dockerfile: Dockerfile.evaluator
+    command: ["./evaluator", "--config=IsTxtFile.json"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - /tmp:/tmp
 
 volumes:
   postgres_data:

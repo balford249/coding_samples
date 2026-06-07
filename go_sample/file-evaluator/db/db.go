@@ -15,7 +15,7 @@ type Store struct {
 
 type EvaluationResult struct {
 	Status string `json:"status"`
-	Result *bool  `json:"result,omitempty"`
+	Type   string `json:"evalType"`
 }
 
 func InitDB() *Store {
@@ -65,9 +65,7 @@ func pingWithRetry(db *sql.DB, maxAttempts int) error {
 func (s *Store) CreateNewEvent(evalType string) (int64, error) {
 	var id int64
 	err := s.DB.QueryRow(
-		"INSERT INTO file_evaluation_event RETURNING id",
-		evalType,
-	).Scan(&id)
+		"INSERT INTO file_evaluation_event DEFAULT VALUES RETURNING id").Scan(&id)
 
 	if err != nil {
 		return 0, fmt.Errorf("Error inserting into database: %v", err)
@@ -76,23 +74,32 @@ func (s *Store) CreateNewEvent(evalType string) (int64, error) {
 	return id, nil
 }
 
-func (s *Store) GetEvent(id int64) (*EvaluationResult, error) {
-	var res EvaluationResult
-	err := s.DB.QueryRow(
-		`SELECT type, upper(coalesce(status, 'pending'))
-		 FROM file_evaluation_type
-		 JOIN  file_evaluation_result using (type)
-		 WHERE eval_id = $1`, id,
-	).Scan(&res.Status, &res.Result)
-
+func (s *Store) GetEvent(id int64) ([]EvaluationResult, error) {
+	rows, err := s.DB.Query(
+		`SELECT type, upper(coalesce(status, 'pending')) as status
+         FROM file_evaluation_result
+         WHERE eval_id = $1`, id,
+	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // not found
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := []EvaluationResult{}
+
+	for rows.Next() {
+		var res EvaluationResult
+		if err := rows.Scan(&res.Type, &res.Status); err != nil {
+			return nil, err
 		}
+		results = append(results, res)
+	}
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &res, nil
+	return results, nil
 }
 
 func (s *Store) InsertResult(processingId int64, result string, evalType string) {

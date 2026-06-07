@@ -40,3 +40,4 @@ func main() {
 		Config:       consumer.ConsumerConfig{Broker: config.Broker, Topic: config.Topic, GroupID: config.GroupID}}
 	kafkaRunner.Run()
 }
+
