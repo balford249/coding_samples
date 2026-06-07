@@ -33,7 +33,15 @@ func (f IsTxtFileConsumerType) EventMapper(msg *kafka.Message) (consumer.Event, 
 func (f IsTxtFileConsumerType) EventHandler(e consumer.Event) (error) {
 	event := e.(FileEvalEvent)
 	res := filepath.Ext(event.FilePath) == ".txt"
-	f.DB.InsertResult(event.ID, res)
+
+	var result string
+	if res {
+		result = "passed"
+	} else {
+		result = "failed"
+	}
+
+	f.DB.InsertResult(event.ID, result, "IsTxtFile")
 	return nil
 }
 

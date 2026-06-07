@@ -43,6 +43,13 @@ func (f FileExistsConsumerType) EventHandler(e consumer.Event) error {
 	if err != nil {
 		fileExists = false
 	}
-	f.DB.InsertResult(event.ID, fileExists)
+
+	var result string
+	if fileExists {
+		result = "passed"
+	} else {
+		result = "failed"
+	}
+	f.DB.InsertResult(event.ID, result, "FileExists")
 	return nil
 }

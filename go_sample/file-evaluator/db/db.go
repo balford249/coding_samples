@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -66,7 +65,7 @@ func pingWithRetry(db *sql.DB, maxAttempts int) error {
 func (s *Store) CreateNewEvent(evalType string) (int64, error) {
 	var id int64
 	err := s.DB.QueryRow(
-		"INSERT INTO file_evaluation (status, type) values ('working', $1) RETURNING id",
+		"INSERT INTO file_evaluation_event RETURNING id",
 		evalType,
 	).Scan(&id)
 
@@ -79,11 +78,11 @@ func (s *Store) CreateNewEvent(evalType string) (int64, error) {
 
 func (s *Store) GetEvent(id int64) (*EvaluationResult, error) {
 	var res EvaluationResult
-
 	err := s.DB.QueryRow(
-		`SELECT status, result 
-		 FROM file_evaluation 
-		 WHERE id = $1`, id,
+		`SELECT type, upper(coalesce(status, 'pending'))
+		 FROM file_evaluation_type
+		 JOIN  file_evaluation_result using (type)
+		 WHERE eval_id = $1`, id,
 	).Scan(&res.Status, &res.Result)
 
 	if err != nil {
@@ -96,13 +95,8 @@ func (s *Store) GetEvent(id int64) (*EvaluationResult, error) {
 	return &res, nil
 }
 
-func (s *Store) InsertResult(processingId int64, result bool) {
-	jsonData, err := json.Marshal(result)
-	if err != nil {
-		log.Printf("Error marshalling data into JSON: %v", err)
-	}
-
-	_, err = s.DB.Exec("UPDATE file_evaluation SET result = $1, result_ts=$2, status='complete' WHERE id = $3", jsonData, time.Now(), processingId)
+func (s *Store) InsertResult(processingId int64, result string, evalType string) {
+	_, err := s.DB.Exec("INSERT INTO file_evaluation_result  VALUES ($1, $2, $3)", processingId, evalType, result)
 	if err != nil {
 		log.Printf("Error inserting into database: %v", err)
 	}
